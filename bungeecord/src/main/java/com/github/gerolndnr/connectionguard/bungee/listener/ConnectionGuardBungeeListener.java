@@ -4,6 +4,7 @@ import com.github.gerolndnr.connectionguard.bungee.ConnectionGuardBungeePlugin;
 import com.github.gerolndnr.connectionguard.core.ConnectionGuard;
 import com.github.gerolndnr.connectionguard.core.geo.GeoResult;
 import com.github.gerolndnr.connectionguard.core.vpn.VpnResult;
+import com.github.gerolndnr.connectionguard.core.webhook.CGWebHookHelper;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -49,52 +50,50 @@ public class ConnectionGuardBungeeListener implements Listener {
             VpnResult vpnResult = vpnResultFuture.join();
 
             if (vpnResult.isVpn()) {
-                String kickMessage = ChatColor.translateAlternateColorCodes(
-                        '&',
-                        ConnectionGuardBungeePlugin.getInstance().getLanguageConfig().getString("messages.vpn-block")
-                                .replaceAll("%IP%", vpnResult.getIpAddress())
-                                .replaceAll("%NAME%", loginEvent.getConnection().getName())
-                );
-                String notifyMessage;
-
-                // Check if command should be executed on flag
-                if (ConnectionGuardBungeePlugin.getInstance().getConfig().getBoolean("behavior.vpn.command.enabled")) {
-                    ConnectionGuardBungeePlugin.getInstance().getProxy().getPluginManager().dispatchCommand(
-                            ConnectionGuardBungeePlugin.getInstance().getProxy().getConsole(),
-                            ConnectionGuardBungeePlugin.getInstance().getConfig().getString("behavior.vpn.command.command")
-                                    .replaceAll("%NAME%", loginEvent.getConnection().getName()));
+                // Check if staff should be notified
+                if (ConnectionGuardBungeePlugin.getInstance().getConfig().getBoolean("behavior.vpn.notify-staff")) {
+                    String notifyMessage = ChatColor.translateAlternateColorCodes(
+                            '&',
+                            ConnectionGuardBungeePlugin.getInstance().getLanguageConfig().getString("messages.vpn-notify")
+                                    .replaceAll("%IP%", vpnResult.getIpAddress())
+                                    .replaceAll("%NAME%", loginEvent.getConnection().getName())
+                    );
+                    broadcastMessage(notifyMessage, "connectionguard.notify.vpn");
                 }
 
-                switch (ConnectionGuardBungeePlugin.getInstance().getConfig().getString("behavior.vpn.flag").toUpperCase()) {
-                    case "KICK_NOTIFY":
-                        notifyMessage = ChatColor.translateAlternateColorCodes(
-                                '&',
-                                ConnectionGuardBungeePlugin.getInstance().getLanguageConfig().getString("messages.vpn-notify-kick")
-                                        .replaceAll("%IP%", vpnResult.getIpAddress())
-                                        .replaceAll("%NAME%", loginEvent.getConnection().getName())
-                        );
-                        broadcastMessage(notifyMessage, "connectionguard.notify.vpn");
-                        loginEvent.setCancelReason(new TextComponent(kickMessage));
-                        loginEvent.setCancelled(true);
-                        break;
-                    case "KICK":
-                        loginEvent.setCancelReason(new TextComponent(kickMessage));
-                        loginEvent.setCancelled(true);
-                        break;
-                    case "NOTIFY":
-                        notifyMessage = ChatColor.translateAlternateColorCodes(
-                                '&',
-                                ConnectionGuardBungeePlugin.getInstance().getLanguageConfig().getString("messages.vpn-notify")
-                                        .replaceAll("%IP%", vpnResult.getIpAddress())
-                                        .replaceAll("%NAME%", loginEvent.getConnection().getName())
-                        );
-                        broadcastMessage(notifyMessage, "connectionguard.notify.vpn");
-                        break;
-                    case "IGNORE":
-                        break;
-                    default:
-                        ConnectionGuard.getLogger().info("Invalid vpn behaviour flag. Please use KICK_NOTIFY, KICK, NOTIFY or IGNORE.");
-                        break;
+                // Check if command should be executed on flag
+                if (ConnectionGuardBungeePlugin.getInstance().getConfig().getBoolean("behavior.vpn.execute-command.enabled")) {
+                    ConnectionGuardBungeePlugin.getInstance().getProxy().getPluginManager().dispatchCommand(
+                            ConnectionGuardBungeePlugin.getInstance().getProxy().getConsole(),
+                            ConnectionGuardBungeePlugin.getInstance().getConfig().getString("behavior.vpn.execute-command.command")
+                                    .replaceAll("%NAME%", loginEvent.getConnection().getName())
+                                    .replaceAll("%IP%", ipAddress));
+                }
+
+                // Check if WebHook should be executed
+                if (ConnectionGuardBungeePlugin.getInstance().getConfig().getBoolean("behavior.vpn.send-webhook.enabled")) {
+                    String webhookMessage = ConnectionGuardBungeePlugin.getInstance().getLanguageConfig().getString("messages.vpn-webhook")
+                            .replaceAll("%NAME%", loginEvent.getConnection().getName())
+                            .replaceAll("%IP%", ipAddress);
+                    String webhookUrl = ConnectionGuardBungeePlugin.getInstance().getConfig().getString("behavior.vpn.send-webhook.url");
+
+                    CGWebHookHelper.sendWebHook(webhookUrl, webhookMessage);
+                }
+
+                // Check if player should be kicked
+                if (ConnectionGuardBungeePlugin.getInstance().getConfig().getBoolean("behavior.vpn.kick-player")) {
+                    String kickMessage = ChatColor.translateAlternateColorCodes(
+                            '&',
+                            ConnectionGuardBungeePlugin.getInstance().getLanguageConfig().getString("messages.vpn-block")
+                                    .replaceAll("%IP%", vpnResult.getIpAddress())
+                                    .replaceAll("%NAME%", loginEvent.getConnection().getName())
+                    );
+
+                    loginEvent.setCancelReason(new TextComponent(kickMessage));
+                    loginEvent.setCancelled(true);
+
+                    loginEvent.completeIntent(ConnectionGuardBungeePlugin.getInstance());
+                    return;
                 }
             }
 
@@ -118,68 +117,63 @@ public class ConnectionGuardBungeeListener implements Listener {
                 }
 
                 if (isGeoFlagged) {
-                    String kickMessage = ChatColor.translateAlternateColorCodes(
-                            '&',
-                            ConnectionGuardBungeePlugin.getInstance().getLanguageConfig().getString("messages.geo-block")
-                                    .replaceAll("%IP%", geoResult.getIpAddress())
-                                    .replaceAll("%COUNTRY%", geoResult.getCountryName())
-                                    .replaceAll("%CITY%", geoResult.getCityName())
-                                    .replaceAll("%ISP%", geoResult.getIspName())
-                                    .replaceAll("%NAME%", loginEvent.getConnection().getName())
-                    );
-                    String notifyMessage;
-
-                    // Check if command should be executed on flag
-                    if (ConnectionGuardBungeePlugin.getInstance().getConfig().getBoolean("behavior.geo.command.enabled")) {
-                        ConnectionGuardBungeePlugin.getInstance().getProxy().getPluginManager().dispatchCommand(
-                                ConnectionGuardBungeePlugin.getInstance().getProxy().getConsole(),
-                                ConnectionGuardBungeePlugin.getInstance().getConfig().getString("behavior.geo.command.command")
-                                        .replaceAll("%NAME%", loginEvent.getConnection().getName()));
+                    // Check if staff should be notified
+                    if (ConnectionGuardBungeePlugin.getInstance().getConfig().getBoolean("behavior.geo.notify-staff")) {
+                        String notifyMessage = ChatColor.translateAlternateColorCodes(
+                                '&',
+                                ConnectionGuardBungeePlugin.getInstance().getLanguageConfig().getString("messages.geo-notify")
+                                        .replaceAll("%IP%", geoResult.getIpAddress())
+                                        .replaceAll("%COUNTRY%", geoResult.getCountryName())
+                                        .replaceAll("%CITY%", geoResult.getCityName())
+                                        .replaceAll("%ISP%", geoResult.getIspName())
+                                        .replaceAll("%NAME%", loginEvent.getConnection().getName())
+                        );
+                        broadcastMessage(notifyMessage, "connectionguard.notify.geo");
                     }
 
-                    switch (ConnectionGuardBungeePlugin.getInstance().getConfig().getString("behavior.geo.flag").toUpperCase()) {
-                        case "KICK_NOTIFY":
-                            notifyMessage = ChatColor.translateAlternateColorCodes(
-                                    '&',
-                                    ConnectionGuardBungeePlugin.getInstance().getLanguageConfig().getString("messages.geo-notify-block")
-                                            .replaceAll("%IP%", geoResult.getIpAddress())
-                                            .replaceAll("%COUNTRY%", geoResult.getCountryName())
-                                            .replaceAll("%CITY%", geoResult.getCityName())
-                                            .replaceAll("%ISP%", geoResult.getIspName())
-                                            .replaceAll("%NAME%", loginEvent.getConnection().getName())
-                            );
-                            broadcastMessage(notifyMessage, "connectionguard.notify.geo");
-                            loginEvent.setCancelReason(new TextComponent(kickMessage));
-                            loginEvent.setCancelled(true);
-                            break;
-                        case "KICK":
-                            loginEvent.setCancelReason(new TextComponent(kickMessage));
-                            loginEvent.setCancelled(true);
-                            break;
-                        case "NOTIFY":
-                            notifyMessage = ChatColor.translateAlternateColorCodes(
-                                    '&',
-                                    ConnectionGuardBungeePlugin.getInstance().getLanguageConfig().getString("messages.geo-notify")
-                                            .replaceAll("%IP%", geoResult.getIpAddress())
-                                            .replaceAll("%COUNTRY%", geoResult.getCountryName())
-                                            .replaceAll("%CITY%", geoResult.getCityName())
-                                            .replaceAll("%ISP%", geoResult.getIspName())
-                                            .replaceAll("%NAME%", loginEvent.getConnection().getName())
-                            );
-                            broadcastMessage(notifyMessage, "connectionguard.notify.geo");
-                            break;
-                        case "IGNORE":
-                            break;
-                        default:
-                            ConnectionGuard.getLogger().info("Invalid geo behavior flag. Please use KICK_NOTIFY, KICK, NOTIFY or IGNORE.");
-                            break;
+                    // Check if command should be executed on flag
+                    if (ConnectionGuardBungeePlugin.getInstance().getConfig().getBoolean("behavior.geo.execute-command.enabled")) {
+                        ConnectionGuardBungeePlugin.getInstance().getProxy().getPluginManager().dispatchCommand(
+                                ConnectionGuardBungeePlugin.getInstance().getProxy().getConsole(),
+                                ConnectionGuardBungeePlugin.getInstance().getConfig().getString("behavior.geo.execute-command.command")
+                                        .replaceAll("%NAME%", loginEvent.getConnection().getName())
+                                        .replaceAll("%IP%", ipAddress));
+                    }
+
+                    // Check if WebHook should be executed
+                    if (ConnectionGuardBungeePlugin.getInstance().getConfig().getBoolean("behavior.geo.send-webhook.enabled")) {
+                        String webhookMessage = ConnectionGuardBungeePlugin.getInstance().getLanguageConfig().getString("messages.geo-webhook")
+                                .replaceAll("%NAME%", loginEvent.getConnection().getName())
+                                .replaceAll("%IP%", ipAddress)
+                                .replaceAll("%COUNTRY%", geoResult.getCountryName())
+                                .replaceAll("%CITY%", geoResult.getCityName());
+                        String webhookUrl = ConnectionGuardBungeePlugin.getInstance().getConfig().getString("behavior.geo.send-webhook.url");
+
+                        CGWebHookHelper.sendWebHook(webhookUrl, webhookMessage);
+                    }
+
+                    // Check if player should be kicked
+                    if (ConnectionGuardBungeePlugin.getInstance().getConfig().getBoolean("behavior.geo.kick-player")) {
+                        String kickMessage = ChatColor.translateAlternateColorCodes(
+                                '&',
+                                ConnectionGuardBungeePlugin.getInstance().getLanguageConfig().getString("messages.geo-block")
+                                        .replaceAll("%IP%", geoResult.getIpAddress())
+                                        .replaceAll("%COUNTRY%", geoResult.getCountryName())
+                                        .replaceAll("%CITY%", geoResult.getCityName())
+                                        .replaceAll("%ISP%", geoResult.getIspName())
+                                        .replaceAll("%NAME%", loginEvent.getConnection().getName())
+                        );
+
+                        loginEvent.setCancelReason(new TextComponent(kickMessage));
+                        loginEvent.setCancelled(true);
+                        loginEvent.completeIntent(ConnectionGuardBungeePlugin.getInstance());
+                        return;
                     }
                 }
             }
 
             loginEvent.completeIntent(ConnectionGuardBungeePlugin.getInstance());
         });
-
 
     }
 

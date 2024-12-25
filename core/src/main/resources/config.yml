@@ -9,6 +9,62 @@
 # entry below to the file name without the .yml extension.
 message-language: 'en'
 
+# Settings about how to behave when finding a vpn or geo-blocked user.
+behavior:
+  vpn:
+    # If set to true, players connected to a vpn cannot join the server.
+    kick-player: true
+    # If set to true, players with the permission connectionguard.notify.vpn will receive a notification message
+    # when a player connected to a vpn tries to connect.
+    notify-staff: true
+    # If set to true, the specified command will be executed by the console when a user connected to a vpn tries to connect.
+    # Available placeholders: %NAME%, %IP%
+    execute-command:
+      enabled: false
+      command: 'ban-ip %IP%'
+    # If set to true, a discord webhook message is sent.
+    send-webhook:
+      enabled: false
+      url: ''
+
+    # If you want some players or ip addresses to be exempted from the vpn check,
+    # you can add them here.
+    exemptions:
+      - '069a79f4-44e9-4726-a5be-fca90e38aaf5'
+      - '127.0.0.1'
+  geo:
+    # If set to true, geo-blocked players cannot join the server.
+    kick-player: true
+    # If set to true, players with the permission connectionguard.notify.geo will receive a notification message
+    # when a geo-blocked player tries to connect.
+    notify-staff: true
+    # If set to true, the specified command will be executed by the console when a geo-blocked user tries to connect.
+    # Available placeholders: %NAME%, %IP%
+    execute-command:
+      enabled: false
+      command: 'ban-ip %IP%'
+    # If set to true, a discord webhook message is sent.
+    send-webhook:
+      enabled: false
+      url: ''
+
+    # Define how restrictive you want to be with geo-blocking.
+    # Available options:
+    # - BLACKLIST (action specified by 'flag' below will be executed, if the country is on the list)
+    # - WHITELIST (action specified by 'flag' below will be executed, if the country is not on the list)
+    type: 'BLACKLIST'
+
+    # Countries are specified by their Alpha 2 code.
+    # A full list can be found here: https://www.iban.com/country-codes
+    list:
+      - CN
+      - RU
+    # If you want some players or ip addresses to be exempted from the geo check,
+    # you can add them here.
+    exemptions:
+      - '069a79f4-44e9-4726-a5be-fca90e38aaf5'
+      - '127.0.0.1'
+
 # You can use multiple services at the same time (just enable multiple at once) to minimize
 # the possibility of a false-flag (high value) or catch very niche vpn services (low value). This number determines, how many of the enabled services have
 # to report that an ip is a proxy/vpn, before the plugin will treat it as a proxy/vpn.
@@ -103,44 +159,3 @@ provider:
       hostname: 'localhost'
       port: 6379
       password: ''
-
-behavior:
-  vpn:
-    # The way how Connection Guard handles connections which are proxy/vpns according to your specified service.
-    # Available options:
-    # - KICK_NOTIFY (prevent player from joining on your server and notify players with connectionguard.notify.vpn permission)
-    # - KICK (prevent player from joining on your server)
-    # - NOTIFY (allow player to join your server, but notify players with connectionguard.notify.vpn permission)
-    # - IGNORE (allow player to join your server and don't notify anyone)
-    flag: 'KICK_NOTIFY'
-    # Execute a command (without the '/'!) when the plugin flags a player.
-    # Available placeholders: %NAME%
-    command:
-      enabled: false
-      command: ''
-    # If you want some players or ip addresses to be exempted from the vpn check,
-    # you can add them here.
-    exemptions:
-      - '069a79f4-44e9-4726-a5be-fca90e38aaf5'
-      - '127.0.0.1'
-  geo:
-    # Define how restrictive you want to be with geo-blocking.
-    # Available options:
-    # - BLACKLIST (action specified by 'flag' below will be executed, if the country is on the list)
-    # - WHITELIST (action specified by 'flag' below will be executed, if the country is not on the list)
-    type: 'BLACKLIST'
-    # Same options as for vpn-flag, see above.
-    flag: 'NOTIFY'
-    command:
-      enabled: false
-      command: ''
-    # Countries are specified by their Alpha 2 code.
-    # A full list can be found here: https://www.iban.com/country-codes
-    list:
-      - CN
-      - RU
-    # If you want some players or ip addresses to be exempted from the geo check,
-    # you can add them here.
-    exemptions:
-      - '069a79f4-44e9-4726-a5be-fca90e38aaf5'
-      - '127.0.0.1'
