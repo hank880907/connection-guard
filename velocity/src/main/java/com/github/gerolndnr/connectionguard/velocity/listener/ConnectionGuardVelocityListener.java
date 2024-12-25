@@ -48,49 +48,36 @@ public class ConnectionGuardVelocityListener {
             VpnResult vpnResult = vpnResultFuture.join();
 
             if (vpnResult.isVpn()) {
-                Component kickMessage = LegacyComponentSerializer.legacyAmpersand().deserialize(
-                        ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.vpn-block")
-                                .replaceAll("%IP%", vpnResult.getIpAddress())
-                                .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
-                );
-                Component notifyMessage;
+                // Check if staff should be notified
+                if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.vpn.notify-staff")) {
+                    Component notifyMessage = LegacyComponentSerializer.legacyAmpersand().deserialize(
+                            ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.vpn-notify")
+                                    .replaceAll("%IP%", vpnResult.getIpAddress())
+                                    .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
+                    );
+                    broadcastMessage(notifyMessage, "connectionguard.notify.vpn");
+                }
 
                 // Check if command should be executed on flag
-                if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.vpn.command.enabled")) {
+                if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.vpn.execute-command.enabled")) {
                     ConnectionGuardVelocityPlugin.getInstance().getProxyServer().getCommandManager().executeAsync(
                             ConnectionGuardVelocityPlugin.getInstance().getProxyServer().getConsoleCommandSource(),
-                            ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getString("behavior.vpn.command.command")
+                            ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getString("behavior.vpn.execute-command.command")
                                     .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
+                                    .replaceAll("%IP%", ipAddress)
                     );
                 }
 
-                switch (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getString("behavior.vpn.flag").toUpperCase()) {
-                    case "KICK_NOTIFY":
-                        notifyMessage = LegacyComponentSerializer.legacyAmpersand().deserialize(
-                                ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.vpn-notify-kick")
-                                        .replaceAll("%IP%", vpnResult.getIpAddress())
-                                        .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
-                        );
-                        broadcastMessage(notifyMessage, "connectionguard.notify.vpn");
+                // Check if player should be kicked
+                if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.vpn.kick-player")) {
+                    Component kickMessage = LegacyComponentSerializer.legacyAmpersand().deserialize(
+                            ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.vpn-block")
+                                    .replaceAll("%IP%", vpnResult.getIpAddress())
+                                    .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
+                    );
 
-                        loginEvent.setResult(ResultedEvent.ComponentResult.denied(kickMessage));
-                        return;
-                    case "KICK":
-                        loginEvent.setResult(ResultedEvent.ComponentResult.denied(kickMessage));
-                        return;
-                    case "NOTIFY":
-                        notifyMessage = LegacyComponentSerializer.legacySection().deserialize(
-                                ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.vpn-notify")
-                                        .replaceAll("%IP%", vpnResult.getIpAddress())
-                                        .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
-                        );
-                        broadcastMessage(notifyMessage, "connectionguard.notify.vpn");
-                        break;
-                    case "IGNORE":
-                        break;
-                    default:
-                        ConnectionGuard.getLogger().info("Invalid vpn behaviour flag. Please use KICK_NOTIFY, KICK, NOTIFY or IGNORE.");
-                        break;
+                    loginEvent.setResult(ResultedEvent.ComponentResult.denied(kickMessage));
+                    return;
                 }
             }
 
@@ -124,47 +111,34 @@ public class ConnectionGuardVelocityListener {
                     );
                     Component notifyMessage;
 
+                    // Check if staff should be notified
+                    if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.geo.notify-staff")) {
+                        notifyMessage = LegacyComponentSerializer.legacySection().deserialize(
+                                ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.geo-notify")
+                                        .replaceAll("%IP%", geoResult.getIpAddress())
+                                        .replaceAll("%COUNTRY%", geoResult.getCountryName())
+                                        .replaceAll("%CITY%", geoResult.getCityName())
+                                        .replaceAll("%ISP%", geoResult.getIspName())
+                                        .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
+                        );
+                        broadcastMessage(notifyMessage, "connectionguard.notify.geo");
+                    }
+
                     // Check if command should be executed on flag
-                    if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.geo.command.enabled")) {
+                    if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.geo.execute-command.enabled")) {
                         ConnectionGuardVelocityPlugin.getInstance().getProxyServer().getCommandManager().executeAsync(
                                 ConnectionGuardVelocityPlugin.getInstance().getProxyServer().getConsoleCommandSource(),
-                                ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getString("behavior.geo.command.command")
+                                ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getString("behavior.geo.execute-command.command")
                                         .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
+                                        .replaceAll("%IP%", ipAddress)
+                                        .replaceAll("%COUNTRY%", geoResult.getCountryName())
                         );
                     }
 
-                    switch (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getString("behavior.geo.flag").toUpperCase()) {
-                        case "KICK_NOTIFY":
-                            notifyMessage = LegacyComponentSerializer.legacySection().deserialize(
-                                    ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.geo-notify-block")
-                                            .replaceAll("%IP%", geoResult.getIpAddress())
-                                            .replaceAll("%COUNTRY%", geoResult.getCountryName())
-                                            .replaceAll("%CITY%", geoResult.getCityName())
-                                            .replaceAll("%ISP%", geoResult.getIspName())
-                                            .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
-                            );
-                            broadcastMessage(notifyMessage, "connectionguard.notify.geo");
-                            loginEvent.setResult(ResultedEvent.ComponentResult.denied(kickMessage));
-                            return;
-                        case "KICK":
-                            loginEvent.setResult(ResultedEvent.ComponentResult.denied(kickMessage));
-                            return;
-                        case "NOTIFY":
-                            notifyMessage = LegacyComponentSerializer.legacySection().deserialize(
-                                    ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.geo-notify")
-                                            .replaceAll("%IP%", geoResult.getIpAddress())
-                                            .replaceAll("%COUNTRY%", geoResult.getCountryName())
-                                            .replaceAll("%CITY%", geoResult.getCityName())
-                                            .replaceAll("%ISP%", geoResult.getIspName())
-                                            .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
-                            );
-                            broadcastMessage(notifyMessage, "connectionguard.notify.geo");
-                            break;
-                        case "IGNORE":
-                            break;
-                        default:
-                            ConnectionGuard.getLogger().info("Invalid geo behavior flag. Please use KICK_NOTIFY, KICK, NOTIFY or IGNORE.");
-                            break;
+                    // Check if player should be kicked
+                    if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.geo.kick-player")) {
+                        loginEvent.setResult(ResultedEvent.ComponentResult.denied(kickMessage));
+                        return;
                     }
                 }
 

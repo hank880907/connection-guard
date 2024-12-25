@@ -12,8 +12,6 @@ message-language: 'en'
 # Settings about how to behave when finding a vpn or geo-blocked user.
 behavior:
   vpn:
-    # DEVELOPMENT
-
     # If set to true, players connected to a vpn cannot join the server.
     kick-player: true
     # If set to true, players with the permission connectionguard.notify.vpn will receive a notification message
@@ -22,24 +20,17 @@ behavior:
     # If set to true, the specified command will be executed by the console when a user connected to a vpn tries to connect.
     # Available placeholders: %NAME%, %IP%
     execute-command:
-      enabled: true
+      enabled: false
       command: 'ban-ip %IP%'
     # If set to true, a discord webhook message is sent.
     send-webhook: true
 
-    # END DEVELOPMENT
-
-    command:
-      enabled: false
-      command: ''
     # If you want some players or ip addresses to be exempted from the vpn check,
     # you can add them here.
     exemptions:
       - '069a79f4-44e9-4726-a5be-fca90e38aaf5'
       - '127.0.0.1'
   geo:
-    # DEVELOPMENT
-
     # If set to true, geo-blocked players cannot join the server.
     kick-player: true
     # If set to true, players with the permission connectionguard.notify.geo will receive a notification message
@@ -48,12 +39,10 @@ behavior:
     # If set to true, the specified command will be executed by the console when a geo-blocked user tries to connect.
     # Available placeholders: %NAME%, %IP%
     execute-command:
-      enabled: true
+      enabled: false
       command: 'ban-ip %IP%'
     # If set to true, a discord webhook message is sent.
     send-webhook: true
-
-    # END DEVELOPMENT
 
     # Define how restrictive you want to be with geo-blocking.
     # Available options:
