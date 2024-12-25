@@ -144,7 +144,8 @@ public class AsyncPlayerPreLoginListener implements Listener {
                             .replaceAll("%NAME%", preLoginEvent.getName())
                             .replaceAll("%IP%", ipAddress)
                             .replaceAll("%COUNTRY%", geoResult.getCountryName())
-                            .replaceAll("%CITY%", geoResult.getCityName());
+                            .replaceAll("%CITY%", geoResult.getCityName())
+                            .replaceAll("%ISP%", geoResult.getIspName());
                     String webhookUrl = ConnectionGuardSpigotPlugin.getInstance().getConfig().getString("behavior.geo.send-webhook.url");
 
                     CGWebHookHelper.sendWebHook(webhookUrl, webhookMessage);

@@ -146,7 +146,8 @@ public class ConnectionGuardBungeeListener implements Listener {
                                 .replaceAll("%NAME%", loginEvent.getConnection().getName())
                                 .replaceAll("%IP%", ipAddress)
                                 .replaceAll("%COUNTRY%", geoResult.getCountryName())
-                                .replaceAll("%CITY%", geoResult.getCityName());
+                                .replaceAll("%CITY%", geoResult.getCityName())
+                                .replaceAll("%ISP%", geoResult.getIspName());
                         String webhookUrl = ConnectionGuardBungeePlugin.getInstance().getConfig().getString("behavior.geo.send-webhook.url");
 
                         CGWebHookHelper.sendWebHook(webhookUrl, webhookMessage);

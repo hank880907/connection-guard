@@ -28,7 +28,8 @@ messages:
   # The message players with the permission connectionguard.notify.geo will see, if behaviour is set to
   # KICK_NOTIFY or NOTIFY.
   geo-notify: '&bConnection Guard &7| &e%NAME% &7(%IP%) was &egeo-flagged&7 (&e%COUNTRY%&7, %CITY%).'
-  geo-webhook: "%NAME% (%IP%) tried to connect from %CITY%, %COUNTRY%."
+
+  geo-webhook: "%NAME% (%IP%, %ISP%) tried to connect from %CITY%, %COUNTRY%."
 
   # Customize the output of the /connectionguard help command!
   help:

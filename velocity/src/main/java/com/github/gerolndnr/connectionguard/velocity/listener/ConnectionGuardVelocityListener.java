@@ -142,7 +142,8 @@ public class ConnectionGuardVelocityListener {
                                 .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
                                 .replaceAll("%IP%", ipAddress)
                                 .replaceAll("%COUNTRY%", geoResult.getCountryName())
-                                .replaceAll("%CITY%", geoResult.getCityName());
+                                .replaceAll("%CITY%", geoResult.getCityName())
+                                .replaceAll("%ISP%", geoResult.getIspName());
                         String webhookUrl = ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getString("behavior.geo.send-webhook.url");
 
                         CGWebHookHelper.sendWebHook(webhookUrl, webhookMessage);
