@@ -23,7 +23,9 @@ behavior:
       enabled: false
       command: 'ban-ip %IP%'
     # If set to true, a discord webhook message is sent.
-    send-webhook: true
+    send-webhook:
+      enabled: false
+      url: ''
 
     # If you want some players or ip addresses to be exempted from the vpn check,
     # you can add them here.
@@ -42,7 +44,9 @@ behavior:
       enabled: false
       command: 'ban-ip %IP%'
     # If set to true, a discord webhook message is sent.
-    send-webhook: true
+    send-webhook:
+      enabled: false
+      url: ''
 
     # Define how restrictive you want to be with geo-blocking.
     # Available options:

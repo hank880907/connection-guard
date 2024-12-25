@@ -3,6 +3,7 @@ package com.github.gerolndnr.connectionguard.velocity.listener;
 import com.github.gerolndnr.connectionguard.core.ConnectionGuard;
 import com.github.gerolndnr.connectionguard.core.geo.GeoResult;
 import com.github.gerolndnr.connectionguard.core.vpn.VpnResult;
+import com.github.gerolndnr.connectionguard.core.webhook.CGWebHookHelper;
 import com.github.gerolndnr.connectionguard.velocity.ConnectionGuardVelocityPlugin;
 import com.velocitypowered.api.event.EventTask;
 import com.velocitypowered.api.event.ResultedEvent;
@@ -68,6 +69,16 @@ public class ConnectionGuardVelocityListener {
                     );
                 }
 
+                // Check if WebHook should be executed
+                if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.vpn.send-webhook.enabled")) {
+                    String webhookMessage = ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.vpn-webhook")
+                            .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
+                            .replaceAll("%IP%", ipAddress);
+                    String webhookUrl = ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getString("behavior.vpn.send-webhook.url");
+
+                    CGWebHookHelper.sendWebHook(webhookUrl, webhookMessage);
+                }
+
                 // Check if player should be kicked
                 if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.vpn.kick-player")) {
                     Component kickMessage = LegacyComponentSerializer.legacyAmpersand().deserialize(
@@ -109,11 +120,10 @@ public class ConnectionGuardVelocityListener {
                                     .replaceAll("%ISP%", geoResult.getIspName())
                                     .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
                     );
-                    Component notifyMessage;
 
                     // Check if staff should be notified
                     if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.geo.notify-staff")) {
-                        notifyMessage = LegacyComponentSerializer.legacySection().deserialize(
+                        Component notifyMessage = LegacyComponentSerializer.legacySection().deserialize(
                                 ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.geo-notify")
                                         .replaceAll("%IP%", geoResult.getIpAddress())
                                         .replaceAll("%COUNTRY%", geoResult.getCountryName())
@@ -133,6 +143,18 @@ public class ConnectionGuardVelocityListener {
                                         .replaceAll("%IP%", ipAddress)
                                         .replaceAll("%COUNTRY%", geoResult.getCountryName())
                         );
+                    }
+
+                    // Check if WebHook should be executed
+                    if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.geo.send-webhook.enabled")) {
+                        String webhookMessage = ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.geo-webhook")
+                                .replaceAll("%NAME%", loginEvent.getPlayer().getUsername())
+                                .replaceAll("%IP%", ipAddress)
+                                .replaceAll("%COUNTRY%", geoResult.getCountryName())
+                                .replaceAll("%CITY%", geoResult.getCityName());
+                        String webhookUrl = ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getString("behavior.geo.send-webhook.url");
+
+                        CGWebHookHelper.sendWebHook(webhookUrl, webhookMessage);
                     }
 
                     // Check if player should be kicked
