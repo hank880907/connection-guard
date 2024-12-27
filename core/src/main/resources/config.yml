@@ -32,6 +32,9 @@ behavior:
     exemptions:
       - '069a79f4-44e9-4726-a5be-fca90e38aaf5'
       - '127.0.0.1'
+    # If enabled, players with the permission connectionguard.exemption.vpn will not be flagged as vpn players.
+    # Only available on Velocity or when having LuckPerms installed on Spigot or BungeeCord.
+    use-permission-exemption: false
   geo:
     # If set to true, geo-blocked players cannot join the server.
     kick-player: true
@@ -64,6 +67,9 @@ behavior:
     exemptions:
       - '069a79f4-44e9-4726-a5be-fca90e38aaf5'
       - '127.0.0.1'
+    # If enabled, players with the permission connectionguard.exemption.geo will not be flagged as geo-blocked players.
+    # Only available on Velocity or when having LuckPerms installed on Spigot or BungeeCord.
+    use-permission-exemption: false
 
 # You can use multiple services at the same time (just enable multiple at once) to minimize
 # the possibility of a false-flag (high value) or catch very niche vpn services (low value). This number determines, how many of the enabled services have

@@ -48,7 +48,7 @@ public class ConnectionGuardVelocityListener {
         return EventTask.async(() -> {
             VpnResult vpnResult = vpnResultFuture.join();
 
-            if (vpnResult.isVpn()) {
+            if (vpnResult.isVpn() && !loginEvent.getPlayer().hasPermission("connectionguard.exemption.vpn")) {
                 // Check if staff should be notified
                 if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.vpn.notify-staff")) {
                     Component notifyMessage = LegacyComponentSerializer.legacyAmpersand().deserialize(
@@ -93,7 +93,7 @@ public class ConnectionGuardVelocityListener {
             }
 
             Optional<GeoResult> geoResultOptional = geoResultOptionalFuture.join();
-            if (geoResultOptional.isPresent()) {
+            if (geoResultOptional.isPresent() && !loginEvent.getPlayer().hasPermission("connectionguard.exemption.geo")) {
                 GeoResult geoResult = geoResultOptional.get();
                 boolean isGeoFlagged = false;
 

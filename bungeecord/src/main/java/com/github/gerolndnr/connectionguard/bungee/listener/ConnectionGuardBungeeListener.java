@@ -3,6 +3,7 @@ package com.github.gerolndnr.connectionguard.bungee.listener;
 import com.github.gerolndnr.connectionguard.bungee.ConnectionGuardBungeePlugin;
 import com.github.gerolndnr.connectionguard.core.ConnectionGuard;
 import com.github.gerolndnr.connectionguard.core.geo.GeoResult;
+import com.github.gerolndnr.connectionguard.core.luckperms.CGLuckPermsHelper;
 import com.github.gerolndnr.connectionguard.core.vpn.VpnResult;
 import com.github.gerolndnr.connectionguard.core.webhook.CGWebHookHelper;
 import net.md_5.bungee.api.ChatColor;
@@ -24,6 +25,8 @@ public class ConnectionGuardBungeeListener implements Listener {
 
         CompletableFuture<VpnResult> vpnResultFuture;
         CompletableFuture<Optional<GeoResult>> geoResultOptionalFuture;
+        CompletableFuture<Boolean> hasVpnExemptionPermissionFuture;
+        CompletableFuture<Boolean> hasGeoExemptionPermissionFuture;
 
         // Check if ip address is in exemption lists
         if (
@@ -32,8 +35,15 @@ public class ConnectionGuardBungeeListener implements Listener {
                         || ConnectionGuardBungeePlugin.getInstance().getConfig().getStringList("behavior.vpn.exemptions").contains(loginEvent.getConnection().getName())
         ) {
             vpnResultFuture = CompletableFuture.completedFuture(new VpnResult(ipAddress, false));
+            hasVpnExemptionPermissionFuture = CompletableFuture.completedFuture(false);
         } else {
             vpnResultFuture = ConnectionGuard.getVpnResult(ipAddress);
+
+            if (ConnectionGuardBungeePlugin.getInstance().getConfig().getBoolean("behavior.vpn.use-permission-exemption")) {
+                hasVpnExemptionPermissionFuture = CGLuckPermsHelper.hasPermission(loginEvent.getConnection().getUniqueId(), "connectionguard.exemption.vpn");
+            } else {
+                hasVpnExemptionPermissionFuture = CompletableFuture.completedFuture(false);
+            }
         }
 
         if (
@@ -42,14 +52,23 @@ public class ConnectionGuardBungeeListener implements Listener {
                         || ConnectionGuardBungeePlugin.getInstance().getConfig().getStringList("behavior.geo.exemptions").contains(loginEvent.getConnection().getName())
         ) {
             geoResultOptionalFuture = CompletableFuture.completedFuture(Optional.empty());
+            hasGeoExemptionPermissionFuture = CompletableFuture.completedFuture(false);
         } else {
             geoResultOptionalFuture = ConnectionGuard.getGeoResult(ipAddress);
+
+            if (ConnectionGuardBungeePlugin.getInstance().getConfig().getBoolean("behavior.geo.use-permission-exemption")) {
+                hasGeoExemptionPermissionFuture = CGLuckPermsHelper.hasPermission(loginEvent.getConnection().getUniqueId(), "connectionguard.exemption.geo");
+            } else {
+                hasGeoExemptionPermissionFuture = CompletableFuture.completedFuture(false);
+            }
         }
 
-        CompletableFuture.allOf(vpnResultFuture, geoResultOptionalFuture).thenRun(() -> {
+        CompletableFuture.allOf(vpnResultFuture, geoResultOptionalFuture, hasVpnExemptionPermissionFuture, hasGeoExemptionPermissionFuture).thenRun(() -> {
             VpnResult vpnResult = vpnResultFuture.join();
+            Boolean hasVpnExemption = hasVpnExemptionPermissionFuture.join();
+            Boolean hasGeoExemption = hasGeoExemptionPermissionFuture.join();
 
-            if (vpnResult.isVpn()) {
+            if (vpnResult.isVpn() && !hasVpnExemption) {
                 // Check if staff should be notified
                 if (ConnectionGuardBungeePlugin.getInstance().getConfig().getBoolean("behavior.vpn.notify-staff")) {
                     String notifyMessage = ChatColor.translateAlternateColorCodes(
@@ -98,7 +117,7 @@ public class ConnectionGuardBungeeListener implements Listener {
             }
 
             Optional<GeoResult> geoResultOptional = geoResultOptionalFuture.join();
-            if (geoResultOptional.isPresent()) {
+            if (geoResultOptional.isPresent() && !hasGeoExemption) {
                 GeoResult geoResult = geoResultOptional.get();
                 boolean isGeoFlagged = false;
 
