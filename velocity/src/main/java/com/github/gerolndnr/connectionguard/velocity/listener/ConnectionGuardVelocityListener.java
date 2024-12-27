@@ -32,16 +32,7 @@ public class ConnectionGuardVelocityListener {
         ) {
             vpnResultFuture = CompletableFuture.completedFuture(new VpnResult(ipAddress, false));
         } else {
-            // Check if 'use-permission-exemption' is activated.
-            if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.vpn.use-permission-exemption")) {
-                if (loginEvent.getPlayer().hasPermission("connectionguard.exemption.vpn")) {
-                    vpnResultFuture = CompletableFuture.completedFuture(new VpnResult(ipAddress, false));
-                } else {
-                    vpnResultFuture = ConnectionGuard.getVpnResult(ipAddress);
-                }
-            } else {
-                vpnResultFuture = ConnectionGuard.getVpnResult(ipAddress);
-            }
+            vpnResultFuture = ConnectionGuard.getVpnResult(ipAddress);
         }
 
         if (
@@ -51,22 +42,13 @@ public class ConnectionGuardVelocityListener {
         ) {
             geoResultOptionalFuture = CompletableFuture.completedFuture(Optional.empty());
         } else {
-            // Check if 'use-permission-exemption' is activated.
-            if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.geo.use-permission-exemption")) {
-                if (loginEvent.getPlayer().hasPermission("connectionguard.exemption.geo")) {
-                    geoResultOptionalFuture = CompletableFuture.completedFuture(Optional.empty());
-                } else {
-                    geoResultOptionalFuture = ConnectionGuard.getGeoResult(ipAddress);
-                }
-            } else {
-                geoResultOptionalFuture = ConnectionGuard.getGeoResult(ipAddress);
-            }
+            geoResultOptionalFuture = ConnectionGuard.getGeoResult(ipAddress);
         }
 
         return EventTask.async(() -> {
             VpnResult vpnResult = vpnResultFuture.join();
 
-            if (vpnResult.isVpn()) {
+            if (vpnResult.isVpn() && !loginEvent.getPlayer().hasPermission("connectionguard.exemption.vpn")) {
                 // Check if staff should be notified
                 if (ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getConfig().getBoolean("behavior.vpn.notify-staff")) {
                     Component notifyMessage = LegacyComponentSerializer.legacyAmpersand().deserialize(
@@ -111,7 +93,7 @@ public class ConnectionGuardVelocityListener {
             }
 
             Optional<GeoResult> geoResultOptional = geoResultOptionalFuture.join();
-            if (geoResultOptional.isPresent()) {
+            if (geoResultOptional.isPresent() && !loginEvent.getPlayer().hasPermission("connectionguard.exemption.geo")) {
                 GeoResult geoResult = geoResultOptional.get();
                 boolean isGeoFlagged = false;
 
