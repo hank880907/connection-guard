@@ -38,6 +38,8 @@
   * City name (e.g. `Berlin`, `London`, ...)
   * ISP provider (e.g. `AT&T`, `Telekom`, ...)
 * **WebHook Support for Discord** - Send messages to discord channels when a geo-blocked or vpn user tries to connect!
+* **Exclude players** from the vpn- and geo-check by giving them the `connectionguard.exemption.vpn` or `connectionguard.exemption.geo` permission! (can be enabled in the config, requires LuckPerms on BungeeCord and Spigot)
+
 ## How To Use
 
 ### Installation
