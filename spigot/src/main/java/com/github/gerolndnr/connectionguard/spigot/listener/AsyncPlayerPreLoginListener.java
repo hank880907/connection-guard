@@ -2,11 +2,11 @@ package com.github.gerolndnr.connectionguard.spigot.listener;
 
 import com.github.gerolndnr.connectionguard.core.ConnectionGuard;
 import com.github.gerolndnr.connectionguard.core.geo.GeoResult;
+import com.github.gerolndnr.connectionguard.core.luckperms.CGLuckPermsHelper;
 import com.github.gerolndnr.connectionguard.core.vpn.VpnResult;
 import com.github.gerolndnr.connectionguard.core.webhook.CGWebHookHelper;
 import com.github.gerolndnr.connectionguard.spigot.ConnectionGuardSpigotPlugin;
 import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -22,6 +22,8 @@ public class AsyncPlayerPreLoginListener implements Listener {
 
         CompletableFuture<VpnResult> vpnResultFuture;
         CompletableFuture<Optional<GeoResult>> geoResultOptionalFuture;
+        CompletableFuture<Boolean> hasVpnExemptionPermissionFuture;
+        CompletableFuture<Boolean> hasGeoExemptionPermissionFuture;
 
         // Check if ip address is in exemption lists
         if (
@@ -30,8 +32,15 @@ public class AsyncPlayerPreLoginListener implements Listener {
                 || ConnectionGuardSpigotPlugin.getInstance().getConfig().getStringList("behavior.vpn.exemptions").contains(preLoginEvent.getName())
         ) {
             vpnResultFuture = CompletableFuture.completedFuture(new VpnResult(ipAddress, false));
+            hasVpnExemptionPermissionFuture = CompletableFuture.completedFuture(false);
         } else {
             vpnResultFuture = ConnectionGuard.getVpnResult(ipAddress);
+
+            if (ConnectionGuardSpigotPlugin.getInstance().getConfig().getBoolean("behavior.vpn.use-permission-exemption")) {
+                hasVpnExemptionPermissionFuture = CGLuckPermsHelper.hasPermission(preLoginEvent.getUniqueId(), "connectionguard.exemption.vpn");
+            } else {
+                hasVpnExemptionPermissionFuture = CompletableFuture.completedFuture(false);
+            }
         }
 
         if (
@@ -40,15 +49,24 @@ public class AsyncPlayerPreLoginListener implements Listener {
                 || ConnectionGuardSpigotPlugin.getInstance().getConfig().getStringList("behavior.geo.exemptions").contains(preLoginEvent.getName())
         ) {
             geoResultOptionalFuture = CompletableFuture.completedFuture(Optional.empty());
+            hasGeoExemptionPermissionFuture = CompletableFuture.completedFuture(false);
         } else {
             geoResultOptionalFuture = ConnectionGuard.getGeoResult(ipAddress);
+
+            if (ConnectionGuardSpigotPlugin.getInstance().getConfig().getBoolean("behavior.geo.use-permission-exemption")) {
+                hasGeoExemptionPermissionFuture = CGLuckPermsHelper.hasPermission(preLoginEvent.getUniqueId(), "connectionguard.exemption.geo");
+            } else {
+                hasGeoExemptionPermissionFuture = CompletableFuture.completedFuture(false);
+            }
         }
 
-        CompletableFuture.allOf(vpnResultFuture, geoResultOptionalFuture).join();
+        CompletableFuture.allOf(vpnResultFuture, geoResultOptionalFuture, hasVpnExemptionPermissionFuture, hasGeoExemptionPermissionFuture).join();
 
         VpnResult vpnResult = vpnResultFuture.join();
+        Boolean hasVpnExemptionPermission = hasVpnExemptionPermissionFuture.join();
+        Boolean hasGeoExemptionPermission = hasGeoExemptionPermissionFuture.join();
 
-        if (vpnResult.isVpn()) {
+        if (vpnResult.isVpn() && !hasVpnExemptionPermission) {
             // Check if staff should be notified
             if (ConnectionGuardSpigotPlugin.getInstance().getConfig().getBoolean("behavior.vpn.notify-staff")) {
                 String notifyMessage = ChatColor.translateAlternateColorCodes(
@@ -95,7 +113,7 @@ public class AsyncPlayerPreLoginListener implements Listener {
         }
 
         Optional<GeoResult> geoResultOptional = geoResultOptionalFuture.join();
-        if (geoResultOptional.isPresent()) {
+        if (geoResultOptional.isPresent() && !hasGeoExemptionPermission) {
             GeoResult geoResult = geoResultOptional.get();
             boolean isGeoFlagged = false;
 
