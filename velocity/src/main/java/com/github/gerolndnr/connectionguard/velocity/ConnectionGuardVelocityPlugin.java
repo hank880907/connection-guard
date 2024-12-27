@@ -24,6 +24,8 @@ import org.slf4j.Logger;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Set;
 
 @Plugin(
         id="connection-guard",
@@ -39,13 +41,14 @@ public class ConnectionGuardVelocityPlugin {
     // Config has to be in an external class, because the YAML library is loaded at runtime.
     private CGVelocityConfig cgVelocityConfig;
     private static ConnectionGuardVelocityPlugin connectionGuardVelocityPlugin;
-
+    private HashMap<String, VpnProvider> vpnProviderMap;
 
     @Inject
     public ConnectionGuardVelocityPlugin(ProxyServer proxyServer, Logger logger, @DataDirectory Path dataDirectory) {
         this.proxyServer = proxyServer;
         this.logger = logger;
         this.dataDirectory = dataDirectory;
+        this.vpnProviderMap = new HashMap<>();
 
         connectionGuardVelocityPlugin = this;
     }
@@ -138,33 +141,37 @@ public class ConnectionGuardVelocityPlugin {
         ConnectionGuard.getCacheProvider().setup();
 
         // 5. Add every enabled vpn provider and geo provider
+        vpnProviderMap.put("proxycheck", new ProxyCheckVpnProvider(getCgVelocityConfig().getConfig().getString("provider.vpn.proxycheck.api-key")));
+        vpnProviderMap.put("ip-api", new IpApiVpnProvider());
+        vpnProviderMap.put("iphub", new IpHubVpnProvider(getCgVelocityConfig().getConfig().getString("provider.vpn.iphub.api-key")));
+        vpnProviderMap.put("vpnapi", new VpnApiVpnProvider(getCgVelocityConfig().getConfig().getString("provider.vpn.vpnapi.api-key")));
+
         ArrayList<VpnProvider> vpnProviders = new ArrayList<>();
 
-        if (cgVelocityConfig.getConfig().getBoolean("provider.vpn.proxycheck.enabled"))
-            vpnProviders.add(new ProxyCheckVpnProvider(cgVelocityConfig.getConfig().getString("provider.vpn.proxycheck.api-key")));
-        if (cgVelocityConfig.getConfig().getBoolean("provider.vpn.ip-api.enabled"))
-            vpnProviders.add(new IpApiVpnProvider());
-        if (cgVelocityConfig.getConfig().getBoolean("provider.vpn.iphub.enabled"))
-            vpnProviders.add(new IpHubVpnProvider(cgVelocityConfig.getConfig().getString("provider.vpn.iphub.api-key")));
-        if (cgVelocityConfig.getConfig().getBoolean("provider.vpn.vpnapi.enabled"))
-            vpnProviders.add(new VpnApiVpnProvider(cgVelocityConfig.getConfig().getString("provider.vpn.vpnapi.api-key")));
-        if (getCgVelocityConfig().getConfig().getBoolean("provider.vpn.custom.enabled")) {
-            vpnProviders.add(
-                    new CustomVpnProvider(
-                            getCgVelocityConfig().getConfig().getString("provider.vpn.custom.request-type"),
-                            getCgVelocityConfig().getConfig().getString("provider.vpn.custom.request-url"),
-                            getCgVelocityConfig().getConfig().getStringList("provider.vpn.custom.request-header"),
-                            getCgVelocityConfig().getConfig().getString("provider.vpn.custom.request-body-type"),
-                            getCgVelocityConfig().getConfig().getString("provider.vpn.custom.request-body"),
-                            getCgVelocityConfig().getConfig().getString("provider.vpn.custom.response-type"),
-                            getCgVelocityConfig().getConfig().getString("provider.vpn.custom.response-format.is-vpn-field.field-name"),
-                            getCgVelocityConfig().getConfig().getString("provider.vpn.custom.response-format.is-vpn-field.field-type"),
-                            getCgVelocityConfig().getConfig().getString("provider.vpn.custom.response-format.is-vpn-field.string-options.is-vpn-string"),
-                            getCgVelocityConfig().getConfig().getString("provider.vpn.custom.response-format.vpn-provider-field.field-name")
-                    )
-            );
+        for (Object keyObject : getCgVelocityConfig().getConfig().getSection("provider.vpn").getKeys()) {
+            String key = keyObject.toString();
+            if (getCgVelocityConfig().getConfig().getBoolean("provider.vpn." + key + ".enabled")) {
+                if (vpnProviderMap.get(key) != null) {
+                    vpnProviders.add(vpnProviderMap.get(key));
+                } else {
+                    vpnProviders.add(
+                            new CustomVpnProvider(
+                                    getCgVelocityConfig().getConfig().getString("provider.vpn." + key + ".request-type"),
+                                    getCgVelocityConfig().getConfig().getString("provider.vpn." + key + ".request-url"),
+                                    getCgVelocityConfig().getConfig().getStringList("provider.vpn." + key + ".request-header"),
+                                    getCgVelocityConfig().getConfig().getString("provider.vpn." + key + ".request-body-type"),
+                                    getCgVelocityConfig().getConfig().getString("provider.vpn." + key + ".request-body"),
+                                    getCgVelocityConfig().getConfig().getString("provider.vpn." + key + ".response-type"),
+                                    getCgVelocityConfig().getConfig().getString("provider.vpn." + key + ".response-format.is-vpn-field.field-name"),
+                                    getCgVelocityConfig().getConfig().getString("provider.vpn." + key + ".response-format.is-vpn-field.field-type"),
+                                    getCgVelocityConfig().getConfig().getString("provider.vpn." + key + ".response-format.is-vpn-field.string-options.is-vpn-string"),
+                                    getCgVelocityConfig().getConfig().getString("provider.vpn." + key + ".response-format.vpn-provider-field.field-name")
+                            )
+                    );
+                }
+                ConnectionGuard.getLogger().info("Registered vpn detection provider '" + key + "'.");
+            }
         }
-
 
         ConnectionGuard.setVpnProviders(vpnProviders);
 

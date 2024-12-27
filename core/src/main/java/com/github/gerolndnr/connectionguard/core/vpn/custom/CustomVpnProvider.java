@@ -75,7 +75,9 @@ public class CustomVpnProvider implements VpnProvider {
             // Set request headers
             for (String header : requestHeaders) {
                 String[] headerSplit = header.split(":");
-                requestBuilder = requestBuilder.addHeader(headerSplit[0], headerSplit[1]);
+                if (headerSplit.length == 2) {
+                    requestBuilder = requestBuilder.addHeader(headerSplit[0], headerSplit[1]);
+                }
             }
 
             Response response;
@@ -112,7 +114,6 @@ public class CustomVpnProvider implements VpnProvider {
             isVpnTree = new String[]{ isVpnFieldName.replaceAll("%IP%", ipAddress) };
         JsonObject isVpnObject = jsonElement.getAsJsonObject();
         boolean isVpn = false;
-        ConnectionGuard.getLogger().info(String.valueOf(isVpnTree.length));
 
         for (int i = 0; i < isVpnTree.length; i++) {
             if (isVpnTree.length - 1 == i) {

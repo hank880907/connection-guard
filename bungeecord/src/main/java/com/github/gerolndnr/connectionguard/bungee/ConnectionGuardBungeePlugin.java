@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class ConnectionGuardBungeePlugin extends Plugin {
     private static ConnectionGuardBungeePlugin connectionGuardBungeePlugin;
@@ -30,9 +31,12 @@ public class ConnectionGuardBungeePlugin extends Plugin {
     private Configuration config;
     private Configuration languageConfig;
 
+    private HashMap<String, VpnProvider> vpnProviderMap;
+
     @Override
     public void onEnable() {
         connectionGuardBungeePlugin = this;
+        vpnProviderMap = new HashMap<>();
 
         // 1. Set logger
         ConnectionGuard.setLogger(getLogger());
@@ -149,31 +153,35 @@ public class ConnectionGuardBungeePlugin extends Plugin {
         ConnectionGuard.getCacheProvider().setup();
 
         // 5. Add every enabled vpn provider and geo provider
+        vpnProviderMap.put("proxycheck", new ProxyCheckVpnProvider(getConfig().getString("provider.vpn.proxycheck.api-key")));
+        vpnProviderMap.put("ip-api", new IpApiVpnProvider());
+        vpnProviderMap.put("iphub", new IpHubVpnProvider(getConfig().getString("provider.vpn.iphub.api-key")));
+        vpnProviderMap.put("vpnapi", new VpnApiVpnProvider(getConfig().getString("provider.vpn.vpnapi.api-key")));
+
         ArrayList<VpnProvider> vpnProviders = new ArrayList<>();
 
-        if (getConfig().getBoolean("provider.vpn.proxycheck.enabled"))
-            vpnProviders.add(new ProxyCheckVpnProvider(getConfig().getString("provider.vpn.proxycheck.api-key")));
-        if (getConfig().getBoolean("provider.vpn.ip-api.enabled"))
-            vpnProviders.add(new IpApiVpnProvider());
-        if (getConfig().getBoolean("provider.vpn.iphub.enabled"))
-            vpnProviders.add(new IpHubVpnProvider(getConfig().getString("provider.vpn.iphub.api-key")));
-        if (getConfig().getBoolean("provider.vpn.vpnapi.enabled"))
-            vpnProviders.add(new VpnApiVpnProvider(getConfig().getString("provider.vpn.vpnapi.api-key")));
-        if (getConfig().getBoolean("provider.vpn.custom.enabled")) {
-            vpnProviders.add(
-                    new CustomVpnProvider(
-                            getConfig().getString("provider.vpn.custom.request-type"),
-                            getConfig().getString("provider.vpn.custom.request-url"),
-                            getConfig().getStringList("provider.vpn.custom.request-header"),
-                            getConfig().getString("provider.vpn.custom.request-body-type"),
-                            getConfig().getString("provider.vpn.custom.request-body"),
-                            getConfig().getString("provider.vpn.custom.response-type"),
-                            getConfig().getString("provider.vpn.custom.response-format.is-vpn-field.field-name"),
-                            getConfig().getString("provider.vpn.custom.response-format.is-vpn-field.field-type"),
-                            getConfig().getString("provider.vpn.custom.response-format.is-vpn-field.string-options.is-vpn-string"),
-                            getConfig().getString("provider.vpn.custom.response-format.vpn-provider-field.field-name")
-                    )
-            );
+        for (String key : getConfig().getSection("provider.vpn").getKeys()) {
+            if (getConfig().getBoolean("provider.vpn." + key + ".enabled")) {
+                if (vpnProviderMap.get(key) != null) {
+                    vpnProviders.add(vpnProviderMap.get(key));
+                } else {
+                    vpnProviders.add(
+                            new CustomVpnProvider(
+                                    getConfig().getString("provider.vpn." + key + ".request-type"),
+                                    getConfig().getString("provider.vpn." + key + ".request-url"),
+                                    getConfig().getStringList("provider.vpn." + key + ".request-header"),
+                                    getConfig().getString("provider.vpn." + key + ".request-body-type"),
+                                    getConfig().getString("provider.vpn." + key + ".request-body"),
+                                    getConfig().getString("provider.vpn." + key + ".response-type"),
+                                    getConfig().getString("provider.vpn." + key + ".response-format.is-vpn-field.field-name"),
+                                    getConfig().getString("provider.vpn." + key + ".response-format.is-vpn-field.field-type"),
+                                    getConfig().getString("provider.vpn." + key + ".response-format.is-vpn-field.string-options.is-vpn-string"),
+                                    getConfig().getString("provider.vpn." + key + ".response-format.vpn-provider-field.field-name")
+                            )
+                    );
+                }
+                ConnectionGuard.getLogger().info("Registered vpn detection provider '" + key + "'.");
+            }
         }
 
         ConnectionGuard.setVpnProviders(vpnProviders);
