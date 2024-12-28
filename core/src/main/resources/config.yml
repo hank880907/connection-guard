@@ -103,6 +103,10 @@ provider:
       api-key: ''
 
     # For advanced usage, there is the option to add other vpn detection provider.
+    # You can find settings for different other provider in the Connection Guard wiki!
+    # https://github.com/gerolndnr/connection-guard/wiki/Custom-Services
+    # Services, that have been implemented as 'custom service':
+    # - VPN-API.xyz (https://vpn-api.xyz)
     custom:
       enabled: false
 
