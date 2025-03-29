@@ -29,7 +29,7 @@ public class CGVelocityConfig {
         configFile = new File(dataDirectory.toFile(), "config.yml");
         if (!configFile.exists()) {
             try {
-                InputStream in = ConnectionGuardVelocityPlugin.class.getResourceAsStream("config.yml");
+                InputStream in = ConnectionGuardVelocityPlugin.class.getResourceAsStream("/config.yml");
                 Files.copy(in, configFile.toPath());
             } catch (IOException e) {
                 ConnectionGuardVelocityPlugin.getInstance().getLogger().error("Connection Guard | " + e.getMessage());
