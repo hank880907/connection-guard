@@ -157,12 +157,17 @@ public class AsyncPlayerPreLoginListener implements Listener {
 
                 // Check if command should be executed on flag
                 if (ConnectionGuardSpigotPlugin.getInstance().getConfig().getBoolean("behavior.geo.execute-command.enabled")) {
-                    Bukkit.dispatchCommand(
-                            Bukkit.getConsoleSender(),
-                            ConnectionGuardSpigotPlugin.getInstance().getConfig().getString("behavior.geo.execute-command.command")
-                                    .replaceAll("%NAME%", preLoginEvent.getName())
-                                    .replaceAll("%IP%", ipAddress)
-                    );
+                    Bukkit.getScheduler().runTask(ConnectionGuardSpigotPlugin.getInstance(), new Runnable() {
+                        @Override
+                        public void run() {
+                            Bukkit.dispatchCommand(
+                                    Bukkit.getConsoleSender(),
+                                    ConnectionGuardSpigotPlugin.getInstance().getConfig().getString("behavior.geo.execute-command.command")
+                                            .replaceAll("%NAME%", preLoginEvent.getName())
+                                            .replaceAll("%IP%", ipAddress)
+                            );
+                        }
+                    });
                 }
 
                 // Check if WebHook should be executed
