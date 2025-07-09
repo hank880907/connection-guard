@@ -1,6 +1,7 @@
 package com.github.gerolndnr.connectionguard.core.vpn;
 
 import com.github.gerolndnr.connectionguard.core.ConnectionGuard;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import okhttp3.OkHttpClient;
@@ -23,7 +24,7 @@ public class IpApiVpnProvider implements VpnProvider {
 
             String status;
             String message;
-            boolean isProxy;
+            boolean isProxy = false;
             JsonObject jsonObject;
             try {
                 response = httpClient.newCall(request).execute();
@@ -39,7 +40,13 @@ public class IpApiVpnProvider implements VpnProvider {
                 return Optional.empty();
             }
 
-            isProxy = jsonObject.get("proxy").getAsBoolean();
+            JsonElement isProxyElement = jsonObject.get("proxy");
+
+            if (isProxyElement == null) {
+                ConnectionGuard.getLogger().info("IP-API | There is no 'proxy'-Element in the response of IP-API.");
+            } else {
+                isProxy = jsonObject.get("proxy").getAsBoolean();
+            }
 
             if (isProxy) {
                 return Optional.of(new VpnResult(ipAddress, true));
