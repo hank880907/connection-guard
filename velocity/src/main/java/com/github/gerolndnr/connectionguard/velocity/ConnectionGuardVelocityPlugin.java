@@ -30,7 +30,7 @@ import java.util.HashMap;
 @Plugin(
         id="connection-guard",
         name="Connection Guard",
-        version="0.4.7",
+        version="0.4.8",
         url="https://github.com/gerolndnr/connection-guard",
         authors = {"gerolndnr"}
 )

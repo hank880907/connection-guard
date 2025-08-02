@@ -6,7 +6,7 @@ plugins {
     id("xyz.jpenilla.run-paper").version("2.3.0")
 }
 
-version = "0.4.7"
+version = "0.4.8"
 
 repositories {
     mavenCentral()
