@@ -140,13 +140,10 @@ public class ConnectionGuardVelocityCommand implements SimpleCommand {
                 geoResult = new GeoResult(ipAddress, "-", "-", "-");
             }
 
-            Component isVpn = LegacyComponentSerializer.legacyAmpersand().deserialize(
-                    ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.info.not-vpn")
-            );
+            String isVpn = ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.info.not-vpn");
+
             if (vpnResult.isVpn()) {
-                isVpn = LegacyComponentSerializer.legacyAmpersand().deserialize(
-                        ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.info.is-vpn")
-                );
+                isVpn = ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getString("messages.info.is-vpn");
             }
 
             for (String line : ConnectionGuardVelocityPlugin.getInstance().getCgVelocityConfig().getLanguageConfig().getStringList("messages.info.text")) {
@@ -156,7 +153,7 @@ public class ConnectionGuardVelocityCommand implements SimpleCommand {
                                         .replaceAll("%COUNTRY%", geoResult.getCountryName())
                                         .replaceAll("%CITY%", geoResult.getCityName())
                                         .replaceAll("%ISP%", geoResult.getIspName())
-                                        .replaceAll("%IS_VPN%", isVpn.toString())
+                                        .replaceAll("%IS_VPN%", isVpn)
                                         .replaceAll("%IP%", ipAddress)
                         )
                 );
